@@ -79,7 +79,8 @@ void Lexer::initializeDictionary() {
     dictionary["SSTSSTTT"] = TokenType::QUOTE_SINGLE;
     dictionary["SSTSTTSS"] = TokenType::COMMA;
     dictionary["SSTSTTTS"] = TokenType::DOT;
-    dictionary["SSTTTSTS"] = TokenType::SEMICOLON;
+    dictionary["SSTTTSTS"] = TokenType::COLON;
+    dictionary["SSTTTSTT"] = TokenType::SEMICOLON;
 }
 
 // --- MOTOR DE LEITURA ---

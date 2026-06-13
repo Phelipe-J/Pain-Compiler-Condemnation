@@ -7,6 +7,8 @@
 #include "Lexer.hpp"
 #include "Parser.hpp"
 
+#include "ASTPrinter.hpp"
+
 // --- FUNÇÃO AUXILIAR PARA DEBUG ---
 std::string tokenTypeToString(TokenType type) {
     switch (type) {
@@ -47,6 +49,9 @@ int main(int argc, char* argv[]) {
         std::vector<std::unique_ptr<Statement>> programAST = parser.parseProgram();
 
         std::cout << "--- ANALISE SINTATICA CONCLUIDA ---" << std::endl;
+
+        ASTPrinter::printAST(programAST);
+
         std::cout << "AST construida com sucesso!" << std::endl;
         std::cout << "Nenhum erro de sintaxe detectado." << std::endl;
 

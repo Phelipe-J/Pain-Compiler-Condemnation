@@ -48,6 +48,7 @@ enum class TokenType {
     QUOTE_SINGLE,   // '
     COMMA,          // ,
     DOT,            // .
+    COLON,          // :
     SEMICOLON,      // ;
 
     // Gerados dinamicamente via ASCII

@@ -105,7 +105,159 @@ public:
           increment(std::move(inc)), body(std::move(b)) {}
 };
 
+// Goto e Labels
+class LabelStatement : public Statement {
+public:
+    std::string name;
+    LabelStatement(std::string n) : name(n) {}
+};
+
+class GotoStatement : public Statement {
+public:
+    std::string labelName;
+    GotoStatement(std::string n) : labelName(n) {}
+};
+
+// Switch e Case
+
+class CaseStatement : public Statement {
+public:
+    std::unique_ptr<Expression> matchValue; //nullptr = DEFAULT
+    std::vector<std::unique_ptr<Statement>> body;
+
+    CaseStatement(std::unique_ptr<Expression> val, std::vector<std::unique_ptr<Statement>> b)
+        : matchValue(std::move(val)), body(std::move(b)) {}
+};
+
+class SwitchStatement : public Statement {
+public:
+    std::unique_ptr<Expression> condition;
+    std::vector<std::unique_ptr<CaseStatement>> cases;
+
+    SwitchStatement(std::unique_ptr<Expression> cond, std::vector<std::unique_ptr<CaseStatement>> c)
+        : condition(std::move(cond)), cases(std::move(c)) {}
+};
+
 class BreakStatement : public Statement {
 public:
-    BreakStatement() = default; // Nó vazio, serve apenas como uma "placa de pare" na árvore
+    BreakStatement() = default; // Nó vazio, serve como sinal de parada
+};
+
+// Vetores e Matrizes
+
+// Ler valor de matriz
+class ArrayAccessExpression : public Expression {
+public:
+    std::string arrayName;
+    std::vector<std::unique_ptr<Expression>> indices; // Guarda a lista de [x][y][z]
+
+    ArrayAccessExpression(std::string name, std::vector<std::unique_ptr<Expression>> idxs)
+        : arrayName(name), indices(std::move(idxs)) {}
+};
+
+class ArrayDeclarationStatement : public Statement {
+public:
+    TokenType structureType;
+    TokenType primitiveType;
+    std::string arrayName;
+    std::vector<std::unique_ptr<Expression>> dimensions;
+
+    ArrayDeclarationStatement(TokenType structType, TokenType primType, std::string name, 
+                              std::vector<std::unique_ptr<Expression>> dims)
+        : structureType(structType), primitiveType(primType), arrayName(name), dimensions(std::move(dims)) {}
+};
+
+class ArrayAssignmentStatement : public Statement {
+public:
+    std::string arrayName;
+    std::vector<std::unique_ptr<Expression>> indices;
+    std::unique_ptr<Expression> assignedValue;
+
+    ArrayAssignmentStatement(std::string name, std::vector<std::unique_ptr<Expression>> idxs, 
+                             std::unique_ptr<Expression> value)
+        : arrayName(name), indices(std::move(idxs)), assignedValue(std::move(value)) {}
+};
+
+// Tipos definidos pelo usário (Struct)
+
+class StructDeclarationStatement : public Statement {
+public:
+    std::string structName;
+    std::vector<std::unique_ptr<Statement>> body; // Guarda as variáveis (e futuramente funções) internas
+
+    StructDeclarationStatement(std::string name, std::vector<std::unique_ptr<Statement>> b)
+        : structName(name), body(std::move(b)) {}
+};
+
+class MemberAccessExpression : public Expression {
+public:
+    std::string objectName;
+    std::string memberName;
+
+    MemberAccessExpression(std::string obj, std::string mem)
+        : objectName(obj), memberName(mem) {}
+};
+
+class MemberAssignmentStatement : public Statement {
+public:
+    std::string objectName;
+    std::string memberName;
+    std::unique_ptr<Expression> assignedValue;
+
+    MemberAssignmentStatement(std::string obj, std::string mem, std::unique_ptr<Expression> val)
+        : objectName(obj), memberName(mem), assignedValue(std::move(val)) {}
+};
+
+// Dictionary
+class DictionaryDeclarationStatement : public Statement {
+public:
+    TokenType keyType;
+    TokenType valueType;
+    std::string dictName;
+
+    DictionaryDeclarationStatement(TokenType kType, TokenType vType, std::string name)
+        : keyType(kType), valueType(vType), dictName(name) {}
+};
+
+// Funções
+struct Parameter {
+    TokenType type;
+    std::string name;
+};
+
+class FunctionDeclarationStatement : public Statement {
+public:
+    TokenType returnType;
+    std::string functionName;
+    std::vector<Parameter> parameters;
+    std::vector<std::unique_ptr<Statement>> body;
+
+    FunctionDeclarationStatement(TokenType retType, std::string name, 
+                                 std::vector<Parameter> params, std::vector<std::unique_ptr<Statement>> b)
+        : returnType(retType), functionName(name), parameters(std::move(params)), body(std::move(b)) {}
+};
+
+class ReturnStatement : public Statement {
+public:
+    std::unique_ptr<Expression> returnValue; // Pode ser nullptr se for um retorno void
+
+    ReturnStatement(std::unique_ptr<Expression> val) : returnValue(std::move(val)) {}
+};
+
+class FunctionCallExpression : public Expression {
+public:
+    std::string functionName;
+    std::vector<std::unique_ptr<Expression>> arguments;
+
+    FunctionCallExpression(std::string name, std::vector<std::unique_ptr<Expression>> args)
+        : functionName(name), arguments(std::move(args)) {}
+};
+
+// Envoltório para quando a chamada de função é uma linha isolada
+class FunctionCallStatement : public Statement {
+public:
+    std::unique_ptr<FunctionCallExpression> callExpression;
+
+    FunctionCallStatement(std::unique_ptr<FunctionCallExpression> call) 
+        : callExpression(std::move(call)) {}
 };

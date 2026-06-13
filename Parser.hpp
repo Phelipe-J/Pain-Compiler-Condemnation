@@ -41,6 +41,19 @@ public:
     std::unique_ptr<Statement> parseDoWhileStatement();
     std::unique_ptr<Statement> parseForStatement();
     
+    std::unique_ptr<Statement> parseSwitchStatement();
+    std::unique_ptr<Statement> parseGotoStatement();
+    
+    std::unique_ptr<Statement> parseIdentifierStatement();
+
+    std::unique_ptr<Statement> parseArrayDeclaration();
+
+    std::unique_ptr<Statement> parseStructDeclaration();
+    std::unique_ptr<Statement> parseDictionaryDeclaration();
+
+    std::unique_ptr<Statement> parseFunctionDeclaration();
+    std::unique_ptr<Statement> parseReturnStatement();
+
     // Loop Principal
     std::vector<std::unique_ptr<Statement>> parseProgram();
 };
