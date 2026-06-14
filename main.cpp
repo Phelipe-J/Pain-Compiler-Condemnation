@@ -1,12 +1,17 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdlib>
+#include <cstdio>
+#include <filesystem>
 
 #include "Token.hpp"
 #include "Lexer.hpp"
 #include "Parser.hpp"
 #include "SemanticAnalyzer.hpp"
+#include "Transpiler.hpp"
 
 #include "ASTPrinter.hpp"
 
@@ -82,6 +87,63 @@ std::string tokenTypeToString(TokenType type) {
     }
 }
 
+static bool runMsvc(const std::string& cFile, const std::string& exeFile) {
+    namespace fs = std::filesystem;
+    fs::path cwd = fs::current_path();
+    fs::path cAbs = cwd / cFile;
+    fs::path exeAbs = cwd / exeFile;
+    fs::path batAbs = cwd / "pcc_build.bat";
+
+    std::ofstream bat(batAbs);
+    if (!bat) {
+        return false;
+    }
+    bat << "@echo off\n"
+        << "set \"VSWHERE=%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\"\n"
+        << "if not exist \"%VSWHERE%\" exit /b 1\n"
+        << "for /f \"usebackq tokens=*\" %%i in (`\"%VSWHERE%\" -latest -property installationPath`) do set \"VSPATH=%%i\"\n"
+        << "if not defined VSPATH exit /b 1\n"
+        << "call \"%VSPATH%\\VC\\Auxiliary\\Build\\vcvars64.bat\" >nul 2>nul\n"
+        << "cl /nologo \"" << cAbs.string() << "\" /Fe:\"" << exeAbs.string() << "\"\n"
+        << "exit /b %errorlevel%\n";
+    bat.close();
+
+    std::string command = "\"\"" + batAbs.string() + "\"\"";
+    int result = std::system(command.c_str());
+
+    std::error_code ec;
+    fs::remove(batAbs, ec);
+    fs::remove(cwd / "saida.obj", ec);
+    return result == 0;
+}
+
+static bool runCompiler(const std::string& cFile, const std::string& exeFile) {
+    struct Candidate { std::string name; std::string command; };
+    std::vector<Candidate> candidates = {
+        { "g++",   "g++ \""   + cFile + "\" -o \"" + exeFile + "\"" },
+        { "gcc",   "gcc \""   + cFile + "\" -o \"" + exeFile + "\"" },
+        { "clang", "clang \"" + cFile + "\" -o \"" + exeFile + "\"" }
+    };
+
+    for (const Candidate& candidate : candidates) {
+        std::string probe = "where " + candidate.name + " >nul 2>nul";
+        if (std::system(probe.c_str()) != 0) {
+            continue;
+        }
+        std::cout << "Compilando o C gerado com '" << candidate.name << "'..." << std::endl;
+        return std::system(candidate.command.c_str()) == 0;
+    }
+
+    std::cout << "g++/gcc/clang nao encontrados; tentando o MSVC (cl)..." << std::endl;
+    if (runMsvc(cFile, exeFile)) {
+        return true;
+    }
+
+    std::cerr << "Nenhum compilador C utilizavel encontrado." << std::endl;
+    std::cerr << "Instale o g++ (MinGW) para gerar o executavel final." << std::endl;
+    return false;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cout << "Error: Command usage: PCC [file_name]" << std::endl;
@@ -125,6 +187,23 @@ int main(int argc, char* argv[]) {
 
         std::cout << "\n--- ANALISE SEMANTICA CONCLUIDA ---" << std::endl;
         std::cout << "Nenhum erro semantico detectado." << std::endl;
+
+        Transpiler transpiler;
+        std::string generatedC = transpiler.generate(programAST);
+
+        std::ofstream outputFile("saida.c");
+        outputFile << generatedC;
+        outputFile.close();
+
+        std::cout << "\n--- TRANSPILACAO CONCLUIDA (saida.c) ---" << std::endl;
+        std::cout << generatedC << std::endl;
+
+        std::cout << "--- LINKING E LOADING ---" << std::endl;
+        if (runCompiler("saida.c", "saida.exe")) {
+            std::cout << "Executavel gerado com sucesso: saida.exe" << std::endl;
+        } else {
+            std::cerr << "Falha ao gerar o executavel a partir de saida.c." << std::endl;
+        }
 
     } catch (const std::exception& e) {
         std::cerr << "\nERRO FATAL DE COMPILACAO: " << e.what() << std::endl;
