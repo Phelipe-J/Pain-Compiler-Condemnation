@@ -25,6 +25,9 @@ std::string tokenTypeToString(TokenType type) {
         case TokenType::STRING_TYPE:   return "STRING_TYPE";
         case TokenType::BOOL_TYPE:     return "BOOL_TYPE";
 
+        case TokenType::LITERAL_TRUE:  return "LITERAL_TRUE";
+        case TokenType::LITERAL_FALSE: return "LITERAL_FALSE";
+
         case TokenType::IF:            return "IF";
         case TokenType::ELSE:          return "ELSE";
         case TokenType::SWITCH:        return "SWITCH";
@@ -142,76 +145,6 @@ static bool runCompiler(const std::string& cFile, const std::string& exeFile) {
     std::cerr << "Nenhum compilador C utilizavel encontrado." << std::endl;
     std::cerr << "Instale o g++ (MinGW) para gerar o executavel final." << std::endl;
     return false;
-        case TokenType::INT:           return "INT";
-        case TokenType::FIXED_POINT:   return "FIXED_POINT";
-        case TokenType::FLOAT:         return "FLOAT";
-        case TokenType::CHAR_TYPE:     return "CHAR_TYPE";
-        case TokenType::STRING_TYPE:   return "STRING_TYPE";
-        case TokenType::BOOL_TYPE:     return "BOOL_TYPE";
-
-        case TokenType::LITERAL_TRUE:  return "LITERAL_TRUE";
-        case TokenType::LITERAL_FALSE: return "LITERAL_FALSE";
-
-        case TokenType::IF:            return "IF";
-        case TokenType::ELSE:          return "ELSE";
-        case TokenType::SWITCH:        return "SWITCH";
-        case TokenType::TERNARY:       return "TERNARY";
-        case TokenType::CASE:          return "CASE";
-        case TokenType::DEFAULT:       return "DEFAULT";
-
-        case TokenType::FOR:           return "FOR";
-        case TokenType::WHILE:         return "WHILE";
-        case TokenType::DO:            return "DO";
-        case TokenType::GOTO:          return "GOTO";
-        case TokenType::BREAK:         return "BREAK";
-
-        case TokenType::ARRAY:         return "ARRAY";
-        case TokenType::MULTI_ARRAY:   return "MULTI_ARRAY";
-        case TokenType::DICTIONARY:    return "DICTIONARY";
-
-        case TokenType::FUNCTION:      return "FUNCTION";
-        case TokenType::RETURN:        return "RETURN";
-
-        case TokenType::STRUCT:        return "STRUCT";
-
-        case TokenType::ASSIGN:        return "ASSIGN";
-        case TokenType::PLUS:          return "PLUS";
-        case TokenType::MINUS:         return "MINUS";
-        case TokenType::MULTIPLY:      return "MULTIPLY";
-        case TokenType::DIVIDE:        return "DIVIDE";
-        case TokenType::MODULUS:       return "MODULUS";
-        case TokenType::EQUAL:         return "EQUAL";
-        case TokenType::NOT_EQUAL:     return "NOT_EQUAL";
-        case TokenType::GREATER:       return "GREATER";
-        case TokenType::LESS:          return "LESS";
-        case TokenType::GREATER_EQUAL: return "GREATER_EQUAL";
-        case TokenType::LESS_EQUAL:    return "LESS_EQUAL";
-        case TokenType::AND:           return "AND";
-        case TokenType::OR:            return "OR";
-        case TokenType::NOT:           return "NOT";
-
-        case TokenType::LPAREN:        return "LPAREN";
-        case TokenType::RPAREN:        return "RPAREN";
-        case TokenType::LBRACE:        return "LBRACE";
-        case TokenType::RBRACE:        return "RBRACE";
-        case TokenType::LBRACKET:      return "LBRACKET";
-        case TokenType::RBRACKET:      return "RBRACKET";
-        case TokenType::QUOTE_DOUBLE:  return "QUOTE_DOUBLE";
-        case TokenType::QUOTE_SINGLE:  return "QUOTE_SINGLE";
-        case TokenType::COMMA:         return "COMMA";
-        case TokenType::DOT:           return "DOT";
-        case TokenType::COLON:         return "COLON";
-        case TokenType::SEMICOLON:     return "SEMICOLON";
-
-        case TokenType::IDENTIFIER:    return "IDENTIFIER";
-        case TokenType::LITERAL_STRING:return "LITERAL_STRING";
-        case TokenType::LITERAL_INT:   return "LITERAL_INT";
-        case TokenType::LITERAL_FLOAT: return "LITERAL_FLOAT";
-
-        case TokenType::EOF_TOKEN:     return "EOF";
-
-        default:                       return "DESCONHECIDO";
-    }
 }
 
 int main(int argc, char* argv[]) {

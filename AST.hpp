@@ -73,13 +73,8 @@ class SyntaxTreeNode {
 public:
     virtual ~SyntaxTreeNode() = default;
     virtual void accept(ASTVisitor& visitor) = 0;
-    virtual void accept(ASTVisitor& visitor) = 0;
 };
 
-class Expression : public SyntaxTreeNode {
-public:
-    Type resolvedType = Type::UNKNOWN;
-};
 class Expression : public SyntaxTreeNode {
 public:
     Type resolvedType = Type::UNKNOWN;
@@ -160,9 +155,6 @@ public:
     TokenType variableType;
     std::string variableName;
     std::unique_ptr<Expression> initialValueExpression;
-    TokenType variableType;
-    std::string variableName;
-    std::unique_ptr<Expression> initialValueExpression;
 
     VariableDeclarationStatement(TokenType type, std::string name, std::unique_ptr<Expression> initialValue)
         : variableType(type), variableName(std::move(name)), initialValueExpression(std::move(initialValue)) {}
@@ -193,8 +185,6 @@ public:
         : condition(std::move(cond)), thenBranch(std::move(thenB)), elseBranch(std::move(elseB)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
 
 class WhileStatement : public Statement {
@@ -204,8 +194,6 @@ public:
 
     WhileStatement(std::unique_ptr<Expression> cond, std::vector<std::unique_ptr<Statement>> b)
         : condition(std::move(cond)), body(std::move(b)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
@@ -219,8 +207,6 @@ public:
         : body(std::move(b)), condition(std::move(cond)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
 
 class ForStatement : public Statement {
@@ -228,17 +214,12 @@ public:
     std::unique_ptr<Statement> initialization;
     std::unique_ptr<Expression> condition;
     std::unique_ptr<Statement> increment;
-    std::unique_ptr<Statement> increment;
     std::vector<std::unique_ptr<Statement>> body;
 
     ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond,
-    ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond,
                  std::unique_ptr<Statement> inc, std::vector<std::unique_ptr<Statement>> b)
         : initialization(std::move(init)), condition(std::move(cond)),
-        : initialization(std::move(init)), condition(std::move(cond)),
           increment(std::move(inc)), body(std::move(b)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
@@ -268,8 +249,6 @@ public:
         : matchValue(std::move(val)), body(std::move(b)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
 
 class SwitchStatement : public Statement {
@@ -279,8 +258,6 @@ public:
 
     SwitchStatement(std::unique_ptr<Expression> cond, std::vector<std::unique_ptr<CaseStatement>> c)
         : condition(std::move(cond)), cases(std::move(c)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
@@ -296,18 +273,11 @@ class ArrayDeclarationStatement : public Statement {
 public:
     TokenType containerType;
     TokenType elementType;
-    TokenType containerType;
-    TokenType elementType;
     std::string arrayName;
     std::vector<std::unique_ptr<Expression>> dimensions;
 
     ArrayDeclarationStatement(TokenType container, TokenType element, std::string name,
-    ArrayDeclarationStatement(TokenType container, TokenType element, std::string name,
                               std::vector<std::unique_ptr<Expression>> dims)
-        : containerType(container), elementType(element),
-          arrayName(std::move(name)), dimensions(std::move(dims)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
         : containerType(container), elementType(element),
           arrayName(std::move(name)), dimensions(std::move(dims)) {}
 
@@ -321,24 +291,7 @@ public:
     std::unique_ptr<Expression> assignedValue;
 
     ArrayAssignmentStatement(std::string name, std::vector<std::unique_ptr<Expression>> idx,
-    ArrayAssignmentStatement(std::string name, std::vector<std::unique_ptr<Expression>> idx,
                              std::unique_ptr<Expression> value)
-        : arrayName(std::move(name)), indices(std::move(idx)), assignedValue(std::move(value)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
-};
-
-class DictionaryDeclarationStatement : public Statement {
-public:
-    TokenType keyType;
-    TokenType valueType;
-    std::string dictName;
-
-    DictionaryDeclarationStatement(TokenType key, TokenType value, std::string name)
-        : keyType(key), valueType(value), dictName(std::move(name)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
-};
         : arrayName(std::move(name)), indices(std::move(idx)), assignedValue(std::move(value)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
@@ -360,12 +313,8 @@ class StructDeclarationStatement : public Statement {
 public:
     std::string structName;
     std::vector<std::unique_ptr<Statement>> body;
-    std::vector<std::unique_ptr<Statement>> body;
 
     StructDeclarationStatement(std::string name, std::vector<std::unique_ptr<Statement>> b)
-        : structName(std::move(name)), body(std::move(b)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
         : structName(std::move(name)), body(std::move(b)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
@@ -377,10 +326,6 @@ public:
     std::string memberName;
     std::unique_ptr<Expression> assignedValue;
 
-    MemberAssignmentStatement(std::string obj, std::string member, std::unique_ptr<Expression> value)
-        : objectName(std::move(obj)), memberName(std::move(member)), assignedValue(std::move(value)) {}
-
-    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
     MemberAssignmentStatement(std::string obj, std::string member, std::unique_ptr<Expression> value)
         : objectName(std::move(obj)), memberName(std::move(member)), assignedValue(std::move(value)) {}
 
