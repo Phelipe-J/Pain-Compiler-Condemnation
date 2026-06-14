@@ -92,10 +92,15 @@ std::unique_ptr<Statement> SyntaxParser::parseStatement() {
 std::unique_ptr<Expression> SyntaxParser::parsePrimary() {
     Token current = peekCurrentToken();
 
-    if (current.type == TokenType::LITERAL_INT) {
+    if (current.type == TokenType::LITERAL_INT || 
+        current.type == TokenType::LITERAL_FLOAT || 
+        current.type == TokenType::LITERAL_STRING ||
+        current.type == TokenType::LITERAL_TRUE ||
+        current.type == TokenType::LITERAL_FALSE) {
         advanceToNextToken();
-        return std::make_unique<LiteralExpression>(current.value);
-    } 
+
+        return std::make_unique<LiteralExpression>(current.type, current.value);
+    }
 
     if (current.type == TokenType::IDENTIFIER) {
         Token nameToken = advanceToNextToken(); // Consome o nome

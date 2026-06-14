@@ -56,6 +56,10 @@ enum class TokenType {
     LITERAL_STRING,
     LITERAL_INT,
     LITERAL_FLOAT,
+
+    // true/false
+    LITERAL_TRUE,
+    LITERAL_FALSE,
     
     // Controle interno do compilador
     EOF_TOKEN
