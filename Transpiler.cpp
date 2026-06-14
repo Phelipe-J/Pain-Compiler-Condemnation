@@ -113,7 +113,9 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
     dictNames.clear();
     collectDicts(program);
 
-    out << "#include <stdio.h>\n\n";
+    out << "#include <stdio.h>\n"
+           "#include <stdlib.h>\n"
+           "#include <string.h>\n\n";
 
     if (!dictNames.empty()) {
         out << "#define PCC_DICT_CAP 256\n"
@@ -137,6 +139,26 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
                "}\n\n";
     }
 
+    out << "void** pcc_gc_list = NULL;\n"
+           "int pcc_gc_count = 0;\n"
+           "int pcc_gc_cap = 0;\n\n"
+           "void pcc_gc_cleanup() {\n"
+           "    for(int i = 0; i < pcc_gc_count; i++) free(pcc_gc_list[i]);\n"
+           "    free(pcc_gc_list);\n"
+           "}\n\n"
+           "char* pcc_strdup(const char* s) {\n"
+           "    char* d = (char*)malloc(strlen(s) + 1);\n"
+           "    if(d) {\n"
+           "        strcpy(d, s);\n"
+           "        if(pcc_gc_count >= pcc_gc_cap) {\n"
+           "            pcc_gc_cap = pcc_gc_cap == 0 ? 128 : pcc_gc_cap * 2;\n"
+           "            pcc_gc_list = (void**)realloc(pcc_gc_list, pcc_gc_cap * sizeof(void*));\n"
+           "        }\n"
+           "        pcc_gc_list[pcc_gc_count++] = d;\n"
+           "    }\n"
+           "    return d;\n"
+           "}\n\n";
+
     for (auto& statement : program) {
         if (dynamic_cast<StructDeclarationStatement*>(statement.get())) {
             statement->accept(*this);
@@ -151,6 +173,10 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
 
     out << "int main() {\n";
     indentLevel++;
+    indent();
+    
+    out << "atexit(pcc_gc_cleanup);\n\n";
+
     for (auto& statement : program) {
         if (statement &&
             !dynamic_cast<FunctionDeclarationStatement*>(statement.get()) &&
@@ -168,7 +194,7 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
 
 void Transpiler::visit(LiteralExpression& node) {
     if (node.literalType == TokenType::LITERAL_STRING) {
-        exprResult = "\"" + node.literalValue + "\"";
+        exprResult = "pcc_strdup(\"" + node.literalValue + "\")";
     } 
     else if (node.literalType == TokenType::LITERAL_TRUE) {
         exprResult = "1";
