@@ -6,21 +6,13 @@
 #include "Token.hpp"
 #include "Lexer.hpp"
 #include "Parser.hpp"
+#include "SemanticAnalyzer.hpp"
 
 #include "ASTPrinter.hpp"
 
 // --- FUNÇÃO AUXILIAR PARA DEBUG ---
 std::string tokenTypeToString(TokenType type) {
     switch (type) {
-<<<<<<< Updated upstream
-        case TokenType::INT:          return "INT";
-        case TokenType::IDENTIFIER:   return "IDENTIFIER";
-        case TokenType::ASSIGN:       return "ASSIGN";
-        case TokenType::LITERAL_INT:  return "LITERAL_INT";
-        case TokenType::SEMICOLON:    return "SEMICOLON";
-        case TokenType::EOF_TOKEN:    return "EOF";
-        default:                      return "OUTRO_TIPO";
-=======
         case TokenType::INT:           return "INT";
         case TokenType::FIXED_POINT:   return "FIXED_POINT";
         case TokenType::FLOAT:         return "FLOAT";
@@ -28,8 +20,8 @@ std::string tokenTypeToString(TokenType type) {
         case TokenType::STRING_TYPE:   return "STRING_TYPE";
         case TokenType::BOOL_TYPE:     return "BOOL_TYPE";
 
-        case TokenType::LITERAL_TRUE:   return "LITERAL_TRUE";
-        case TokenType::LITERAL_FALSE:  return "LITERAL_FALSE";
+        case TokenType::LITERAL_TRUE:  return "LITERAL_TRUE";
+        case TokenType::LITERAL_FALSE: return "LITERAL_FALSE";
 
         case TokenType::IF:            return "IF";
         case TokenType::ELSE:          return "ELSE";
@@ -90,7 +82,6 @@ std::string tokenTypeToString(TokenType type) {
         case TokenType::EOF_TOKEN:     return "EOF";
 
         default:                       return "DESCONHECIDO";
->>>>>>> Stashed changes
     }
 }
 
@@ -126,6 +117,17 @@ int main(int argc, char* argv[]) {
 
         std::cout << "AST construida com sucesso!" << std::endl;
         std::cout << "Nenhum erro de sintaxe detectado." << std::endl;
+
+        SemanticAnalyzer analyzer;
+        bool semanticOk = analyzer.analyze(programAST);
+
+        if (!semanticOk) {
+            std::cerr << "\nCompilacao interrompida: erros semanticos encontrados." << std::endl;
+            return 1;
+        }
+
+        std::cout << "\n--- ANALISE SEMANTICA CONCLUIDA ---" << std::endl;
+        std::cout << "Nenhum erro semantico detectado." << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "\nERRO FATAL DE COMPILACAO: " << e.what() << std::endl;
