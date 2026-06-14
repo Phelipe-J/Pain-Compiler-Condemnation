@@ -24,65 +24,65 @@ Lexer::~Lexer() {
 
 // --- DICIONÁRIO ---
 void Lexer::initializeDictionary() {      
-    dictionary["TSSSSSSS"] = TokenType::INT;
-    dictionary["TSSSSTSS"] = TokenType::FIXED_POINT;
-    dictionary["TSTSSSSS"] = TokenType::FLOAT;
-    dictionary["TTSSSSSS"] = TokenType::CHAR_TYPE;
-    dictionary["TTTSSSST"] = TokenType::STRING_TYPE;
-    dictionary["TSSSSSST"] = TokenType::BOOL_TYPE;
+    dictionary["\t       "] = TokenType::INT;
+    dictionary["\t    \t  "] = TokenType::FIXED_POINT;
+    dictionary["\t \t     "] = TokenType::FLOAT;
+    dictionary["\t\t      "] = TokenType::CHAR_TYPE;
+    dictionary["\t\t\t    \t"] = TokenType::STRING_TYPE;
+    dictionary["\t      \t"] = TokenType::BOOL_TYPE;
 
-    dictionary["TSSSSTTT"] = TokenType::LITERAL_TRUE;
-    dictionary["TSSSSTST"] = TokenType::LITERAL_FALSE;
-    
-    dictionary["TSTTTTSS"] = TokenType::IF;
-    dictionary["TSTTTTST"] = TokenType::ELSE;
-    dictionary["TTTTTTTS"] = TokenType::SWITCH;
-    dictionary["TSSSTTTT"] = TokenType::TERNARY;
-    dictionary["TTSTSSST"] = TokenType::CASE;
-    dictionary["TSTSSTTS"] = TokenType::DEFAULT;
-    
-    dictionary["TTSTSTSS"] = TokenType::FOR;
-    dictionary["TSTSTSTS"] = TokenType::WHILE;
-    dictionary["TSTSTSTT"] = TokenType::DO;
-    dictionary["TSSSSSTT"] = TokenType::GOTO;
-    dictionary["TTSSTTTS"] = TokenType::BREAK;
-    
-    dictionary["TSTTTTTS"] = TokenType::ARRAY;
-    dictionary["TTTTTTTT"] = TokenType::MULTI_ARRAY;
-    dictionary["TTSTSTST"] = TokenType::DICTIONARY;
-    
-    dictionary["TTSSSSST"] = TokenType::FUNCTION;
-    dictionary["TSTSSSST"] = TokenType::RETURN;
-    dictionary["TSTTTSTS"] = TokenType::STRUCT;
-    
-    dictionary["SSTTTTST"] = TokenType::ASSIGN;
-    dictionary["SSTSTSTT"] = TokenType::PLUS;
-    dictionary["SSTSTTST"] = TokenType::MINUS;
-    dictionary["SSTSTSTS"] = TokenType::MULTIPLY;
-    dictionary["SSTSTTTT"] = TokenType::DIVIDE;
-    dictionary["TTSSSSTT"] = TokenType::EQUAL;
-    dictionary["TTSSSSTS"] = TokenType::NOT_EQUAL;
-    dictionary["SSTTTTTS"] = TokenType::GREATER;
-    dictionary["SSTTTTSS"] = TokenType::LESS;
-    dictionary["TSSTTTTS"] = TokenType::GREATER_EQUAL;
-    dictionary["TSSTTTSS"] = TokenType::LESS_EQUAL;
-    dictionary["TSSTSTST"] = TokenType::AND;
-    dictionary["TSSTSTSS"] = TokenType::OR;
-    dictionary["SSTSSSST"] = TokenType::NOT;
-    dictionary["TSTSSTST"] = TokenType::MODULUS;
-    
-    dictionary["SSTSTSSS"] = TokenType::LPAREN;
-    dictionary["SSTSTSST"] = TokenType::RPAREN;
-    dictionary["STTTTSTS"] = TokenType::LBRACE;
-    dictionary["STTTTTST"] = TokenType::RBRACE;
-    dictionary["STSTTSTS"] = TokenType::LBRACKET;
-    dictionary["STSTTTST"] = TokenType::RBRACKET;
-    dictionary["SSTSSSTS"] = TokenType::QUOTE_DOUBLE;
-    dictionary["SSTSSTTT"] = TokenType::QUOTE_SINGLE;
-    dictionary["SSTSTTSS"] = TokenType::COMMA;
-    dictionary["SSTSTTTS"] = TokenType::DOT;
-    dictionary["SSTTTSTS"] = TokenType::COLON;
-    dictionary["SSTTTSTT"] = TokenType::SEMICOLON;
+    dictionary["\t    \t\t\t"] = TokenType::LITERAL_TRUE;
+    dictionary["\t    \t \t"] = TokenType::LITERAL_FALSE;
+
+    dictionary["\t \t\t\t\t  "] = TokenType::IF;
+    dictionary["\t \t\t\t\t \t"] = TokenType::ELSE;
+    dictionary["\t\t\t\t\t\t\t "] = TokenType::SWITCH;
+    dictionary["\t   \t\t\t\t"] = TokenType::TERNARY;
+    dictionary["\t\t \t   \t"] = TokenType::CASE;
+    dictionary["\t \t  \t\t "] = TokenType::DEFAULT;
+
+    dictionary["\t\t \t \t  "] = TokenType::FOR;
+    dictionary["\t \t \t \t "] = TokenType::WHILE;
+    dictionary["\t \t \t \t\t"] = TokenType::DO;
+    dictionary["\t     \t\t"] = TokenType::GOTO;
+    dictionary["\t\t  \t\t\t "] = TokenType::BREAK;
+
+    dictionary["\t \t\t\t\t\t "] = TokenType::ARRAY;
+    dictionary["\t\t\t\t\t\t\t\t"] = TokenType::MULTI_ARRAY;
+    dictionary["\t\t \t \t \t"] = TokenType::DICTIONARY;
+
+    dictionary["\t\t     \t"] = TokenType::FUNCTION;
+    dictionary["\t \t    \t"] = TokenType::RETURN;
+    dictionary["\t \t\t\t \t "] = TokenType::STRUCT;
+
+    dictionary["  \t\t\t\t \t"] = TokenType::ASSIGN;
+    dictionary["  \t \t \t\t"] = TokenType::PLUS;
+    dictionary["  \t \t\t \t"] = TokenType::MINUS;
+    dictionary["  \t \t \t "] = TokenType::MULTIPLY;
+    dictionary["  \t \t\t\t\t"] = TokenType::DIVIDE;
+    dictionary["\t\t    \t\t"] = TokenType::EQUAL;
+    dictionary["\t\t    \t "] = TokenType::NOT_EQUAL;
+    dictionary["  \t\t\t\t\t "] = TokenType::GREATER;
+    dictionary["  \t\t\t\t  "] = TokenType::LESS;
+    dictionary["\t  \t\t\t\t "] = TokenType::GREATER_EQUAL;
+    dictionary["\t  \t\t\t  "] = TokenType::LESS_EQUAL;
+    dictionary["\t  \t \t \t"] = TokenType::AND;
+    dictionary["\t  \t \t  "] = TokenType::OR;
+    dictionary["  \t    \t"] = TokenType::NOT;
+    dictionary["\t \t  \t \t"] = TokenType::MODULUS;
+
+    dictionary["  \t \t   "] = TokenType::LPAREN;
+    dictionary["  \t \t  \t"] = TokenType::RPAREN;
+    dictionary[" \t\t\t\t \t "] = TokenType::LBRACE;
+    dictionary[" \t\t\t\t\t \t"] = TokenType::RBRACE;
+    dictionary[" \t \t\t \t "] = TokenType::LBRACKET;
+    dictionary[" \t \t\t\t \t"] = TokenType::RBRACKET;
+    dictionary["  \t   \t "] = TokenType::QUOTE_DOUBLE;
+    dictionary["  \t  \t\t\t"] = TokenType::QUOTE_SINGLE;
+    dictionary["  \t \t\t  "] = TokenType::COMMA;
+    dictionary["  \t \t\t\t "] = TokenType::DOT;
+    dictionary["  \t\t\t \t "] = TokenType::COLON;
+    dictionary["  \t\t\t \t\t"] = TokenType::SEMICOLON;
 }
 
 // --- MOTOR DE LEITURA ---
@@ -127,7 +127,7 @@ std::vector<Token> Lexer::tokenizeAll() {
             currentColumn++;
         }
 
-        if (ch == 'S' || ch == 'T') {
+        if (ch == '\t' || ch == '    ') {
             buffer[readingCount] = ch;
             readingCount++;
 
@@ -135,7 +135,7 @@ std::vector<Token> Lexer::tokenizeAll() {
                 
                 int asciiValue = 0;
                 for (int i = 0; i < 8; i++) {
-                    if (buffer[i] == 'T') asciiValue |= (1 << (7 - i));
+                    if (buffer[i] == '\t') asciiValue |= (1 << (7 - i));
                 }
                 char decodedChar = static_cast<char>(asciiValue);
 
