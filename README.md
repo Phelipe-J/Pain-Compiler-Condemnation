@@ -28,16 +28,16 @@
 		. [✓] Chamar Função (Passar argumentos)
 		. [✓] Return
 
-[X] Análise Semântica:
+[✓] Análise Semântica:
 
-	- [X] Tabela de Símbolos: Classe que atua como memória do compilador que armazena os tipos, nomes e escopos das variáveis durante compilação
-	- [X] Verificação de Declaração Prévia: Ver se uma variável chamada já foi declarada em algum momento
-	- [X] Checagem de Tipos: Validar legalidade de operações e retornos
+	- [✓] Tabela de Símbolos: Classe que atua como memória do compilador que armazena os tipos, nomes e escopos das variáveis durante compilação
+	- [✓] Verificação de Declaração Prévia: Ver se uma variável chamada já foi declarada em algum momento
+	- [✓] Checagem de Tipos: Validar legalidade de operações e retornos
 
-[X] Transpilador:
+[✓] Transpilador:
 
-	- [X] Gerador de Código: Módulo que recebe a AST já validade pela semântica
-	- [X] Design Pattern Visitor: Recebe os nós em ordem e traduz para texto em um arquivo .c
-	- [X] Tradução de Estruturas Complexas: Mapear como structs são geradas em C e implementar hash tables
-	- [X] Linking e Loading: Fazer o g++ ser invocado automaticamente para já ter um arquivo executável no fim
+	- [✓] Gerador de Código: Módulo que recebe a AST já validada pela semântica (expressões, atribuições, controle de fluxo, funções, structs, vetores e dicionários)
+	- [✓] Design Pattern Visitor: Recebe os nós em ordem e traduz para texto em um arquivo .c
+	- [✓] Tradução de Estruturas Complexas: Mapear como structs são geradas em C e implementar hash tables
+	- [✓] Linking e Loading: Fazer o g++ ser invocado automaticamente para já ter um arquivo executável no fim
 
