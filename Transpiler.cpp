@@ -167,7 +167,18 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
 }
 
 void Transpiler::visit(LiteralExpression& node) {
-    exprResult = node.literalValue;
+    if (node.literalType == TokenType::LITERAL_STRING) {
+        exprResult = "\"" + node.literalValue + "\"";
+    } 
+    else if (node.literalType == TokenType::LITERAL_TRUE) {
+        exprResult = "1";
+    } 
+    else if (node.literalType == TokenType::LITERAL_FALSE) {
+        exprResult = "0";
+    } 
+    else {
+        exprResult = node.literalValue;
+    }
 }
 
 void Transpiler::visit(IdentifierExpression& node) {

@@ -116,20 +116,27 @@ static bool runMsvc(const std::string& cFile, const std::string& exeFile) {
 
     std::error_code ec;
     fs::remove(batAbs, ec);
-    fs::remove(cwd / "saida.obj", ec);
+    fs::path objName = fs::path(cFile).stem().string() + ".obj";
+    fs::remove(cwd / objName, ec); 
     return result == 0;
 }
 
-static bool runCompiler(const std::string& cFile, const std::string& exeFile) {
+static bool runCompiler(const std::string& cFile, const std::string& finalExe) {
     struct Candidate { std::string name; std::string command; };
+    
     std::vector<Candidate> candidates = {
-        { "g++",   "g++ \""   + cFile + "\" -o \"" + exeFile + "\"" },
-        { "gcc",   "gcc \""   + cFile + "\" -o \"" + exeFile + "\"" },
-        { "clang", "clang \"" + cFile + "\" -o \"" + exeFile + "\"" }
+        { "g++",   "g++ \""   + cFile + "\" -o \"" + finalExe + "\"" },
+        { "gcc",   "gcc \""   + cFile + "\" -o \"" + finalExe + "\"" },
+        { "clang", "clang \"" + cFile + "\" -o \"" + finalExe + "\"" }
     };
 
     for (const Candidate& candidate : candidates) {
-        std::string probe = "where " + candidate.name + " >nul 2>nul";
+        #ifdef _WIN32
+            std::string probe = "where " + candidate.name + " >nul 2>nul";
+        #else
+            std::string probe = "which " + candidate.name + " > /dev/null 2>&1";
+        #endif
+
         if (std::system(probe.c_str()) != 0) {
             continue;
         }
@@ -137,24 +144,33 @@ static bool runCompiler(const std::string& cFile, const std::string& exeFile) {
         return std::system(candidate.command.c_str()) == 0;
     }
 
-    std::cout << "g++/gcc/clang nao encontrados; tentando o MSVC (cl)..." << std::endl;
-    if (runMsvc(cFile, exeFile)) {
-        return true;
-    }
+    #ifdef _WIN32
+        std::cout << "g++/gcc/clang nao encontrados; tentando o MSVC (cl)..." << std::endl;
+        if (runMsvc(cFile, finalExe)) {
+            return true;
+        }
+    #endif
 
-    std::cerr << "Nenhum compilador C utilizavel encontrado." << std::endl;
-    std::cerr << "Instale o g++ (MinGW) para gerar o executavel final." << std::endl;
+    std::cerr << "Nenhum compilador C utilizavel encontrado no sistema." << std::endl;
     return false;
 }
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cout << "Error: Command usage: PCC [file_name]" << std::endl;
+        std::cout << "Uso: PCC <arquivo_entrada> [caminho/nome_saida_sem_extensao]" << std::endl;
         return 1;
     }
 
+    std::string baseOutputName = (argc >= 3) ? argv[2] : "saida";
+    std::string cFileName = baseOutputName + ".c";
+    
+    #ifdef _WIN32
+        std::string exeFileName = baseOutputName + ".exe";
+    #else
+        std::string exeFileName = baseOutputName;
+    #endif
+
     try {
-        // Instancia o Lexer e gera a fita de Tokens
         Lexer lexer(argv[1]);
         std::vector<Token> tokens = lexer.tokenizeAll();
 
@@ -169,7 +185,6 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "\n";
 
-        // Passa os tokens para o Parser e constrói a AST
         SyntaxParser parser(tokens);
         std::vector<std::unique_ptr<Statement>> programAST = parser.parseProgram();
 
@@ -194,18 +209,27 @@ int main(int argc, char* argv[]) {
         Transpiler transpiler;
         std::string generatedC = transpiler.generate(programAST);
 
-        std::ofstream outputFile("saida.c");
+        std::filesystem::path outPath(cFileName);
+        if (outPath.has_parent_path()) {
+            std::filesystem::create_directories(outPath.parent_path());
+        }
+
+        std::ofstream outputFile(cFileName);
+        if (!outputFile.is_open()) {
+            std::cerr << "Erro fatal: Nao foi possivel criar o arquivo de saida em '" << cFileName << "'\n";
+            return 1;
+        }
         outputFile << generatedC;
         outputFile.close();
 
-        std::cout << "\n--- TRANSPILACAO CONCLUIDA (saida.c) ---" << std::endl;
+        std::cout << "\n--- TRANSPILACAO CONCLUIDA (" << cFileName << ") ---" << std::endl;
         std::cout << generatedC << std::endl;
 
         std::cout << "--- LINKING E LOADING ---" << std::endl;
-        if (runCompiler("saida.c", "saida.exe")) {
-            std::cout << "Executavel gerado com sucesso: saida.exe" << std::endl;
+        if (runCompiler(cFileName, exeFileName)) {
+            std::cout << "Executavel gerado com sucesso: " << exeFileName << std::endl;
         } else {
-            std::cerr << "Falha ao gerar o executavel a partir de saida.c." << std::endl;
+            std::cerr << "Falha ao gerar o executavel a partir de " << cFileName << "." << std::endl;
         }
 
     } catch (const std::exception& e) {
