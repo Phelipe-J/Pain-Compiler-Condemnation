@@ -47,8 +47,11 @@ std::string tokenTypeToString(TokenType type) {
 
         case TokenType::FUNCTION:      return "FUNCTION";
         case TokenType::RETURN:        return "RETURN";
+        case TokenType::PRINTF:        return "PRINTF";
+        case TokenType::SCANF:         return "SCANF";
 
         case TokenType::STRUCT:        return "STRUCT";
+        case TokenType::CALL_STRUCT:   return "CALL_STRUCT";
 
         case TokenType::ASSIGN:        return "ASSIGN";
         case TokenType::PLUS:          return "PLUS";
@@ -83,6 +86,7 @@ std::string tokenTypeToString(TokenType type) {
         case TokenType::LITERAL_STRING:return "LITERAL_STRING";
         case TokenType::LITERAL_INT:   return "LITERAL_INT";
         case TokenType::LITERAL_FLOAT: return "LITERAL_FLOAT";
+        case TokenType::LITERAL_CHAR:  return "LITERAL_CHAR";
 
         case TokenType::EOF_TOKEN:     return "EOF";
 

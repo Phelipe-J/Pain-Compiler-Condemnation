@@ -24,6 +24,8 @@ Lexer::~Lexer() {
 
 // --- DICIONÁRIO ---
 void Lexer::initializeDictionary() {      
+    dictionary["  \t  \t\t "] = TokenType::ADDRESS_OF;
+
     dictionary["\t       "] = TokenType::INT;
     dictionary["\t    \t  "] = TokenType::FIXED_POINT;
     dictionary["\t \t     "] = TokenType::FLOAT;
@@ -54,6 +56,9 @@ void Lexer::initializeDictionary() {
     dictionary["\t\t     \t"] = TokenType::FUNCTION;
     dictionary["\t \t    \t"] = TokenType::RETURN;
     dictionary["\t \t\t\t \t "] = TokenType::STRUCT;
+    dictionary["\t \t\t  \t "] = TokenType::CALL_STRUCT;
+    dictionary["\t\t\t \t\t  "] = TokenType::PRINTF;
+    dictionary["\t\t \t  \t "] = TokenType::SCANF;
 
     dictionary["  \t\t\t\t \t"] = TokenType::ASSIGN;
     dictionary["  \t \t \t\t"] = TokenType::PLUS;
@@ -73,7 +78,7 @@ void Lexer::initializeDictionary() {
 
     dictionary["  \t \t   "] = TokenType::LPAREN;
     dictionary["  \t \t  \t"] = TokenType::RPAREN;
-    dictionary[" \t\t\t\t \t "] = TokenType::LBRACE;
+    dictionary[" \t\t\t\t \t\t"] = TokenType::LBRACE;
     dictionary[" \t\t\t\t\t \t"] = TokenType::RBRACE;
     dictionary[" \t \t\t \t "] = TokenType::LBRACKET;
     dictionary[" \t \t\t\t \t"] = TokenType::RBRACKET;
@@ -85,7 +90,6 @@ void Lexer::initializeDictionary() {
     dictionary["  \t\t\t \t\t"] = TokenType::SEMICOLON;
 }
 
-// --- MOTOR DE LEITURA ---
 std::vector<Token> Lexer::tokenizeAll() {
     std::vector<Token> tokens;
     char ch;
@@ -103,6 +107,10 @@ std::vector<Token> Lexer::tokenizeAll() {
     bool insideString = false;
     std::string currentString = "";
     int strLine = 0, strCol = 0;
+
+    bool insideChar = false;
+    std::string currentChar = "";
+    int charLine = 0, charCol = 0;
 
     auto flushWord = [&]() {
         if (!currentWord.empty()) {
@@ -127,7 +135,7 @@ std::vector<Token> Lexer::tokenizeAll() {
             currentColumn++;
         }
 
-        if (ch == '\t' || ch == '    ') {
+        if (ch == '\t' || ch == ' ') {
             buffer[readingCount] = ch;
             readingCount++;
 
@@ -148,6 +156,15 @@ std::vector<Token> Lexer::tokenizeAll() {
                         currentString += decodedChar;
                     }
                 } 
+                else if (insideChar) {
+                    if (dictionary.find(buffer) != dictionary.end() && dictionary[buffer] == TokenType::QUOTE_SINGLE) {
+                        insideChar = false;
+                        tokens.push_back({TokenType::LITERAL_CHAR, currentChar, charLine, charCol});
+                        currentChar = "";
+                    } else {
+                        currentChar += decodedChar;
+                    }
+                }
                 else if (dictionary.find(buffer) != dictionary.end()) {
                     TokenType t = dictionary[buffer];
                     
@@ -161,7 +178,13 @@ std::vector<Token> Lexer::tokenizeAll() {
                             insideString = true;
                             strLine = currentLine;
                             strCol = currentColumn;
-                        } else {
+                        }
+                        else if (t == TokenType::QUOTE_SINGLE) {
+                            insideChar = true;
+                            charLine = currentLine;
+                            charCol = currentColumn;
+                        }
+                        else {
                             tokens.push_back({t, buffer, currentLine, currentColumn});
                         }
                     }

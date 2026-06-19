@@ -72,6 +72,9 @@ std::unique_ptr<Statement> SyntaxParser::parseStatement() {
 
         case TokenType::STRUCT:
             return parseStructDeclaration();
+
+        case TokenType::CALL_STRUCT:
+            return parseVariableDeclaration();
             
         case TokenType::DICTIONARY:
             return parseDictionaryDeclaration();
@@ -81,6 +84,12 @@ std::unique_ptr<Statement> SyntaxParser::parseStatement() {
 
         case TokenType::RETURN:
             return parseReturnStatement();
+
+        case TokenType::PRINTF:
+            return parsePrintfStatement();
+
+        case TokenType::SCANF:
+            return parseScanfStatement();
 
         default:
             throw std::runtime_error("Erro de Sintaxe: Comando nao reconhecido na linha " + std::to_string(current.line));
@@ -92,9 +101,16 @@ std::unique_ptr<Statement> SyntaxParser::parseStatement() {
 std::unique_ptr<Expression> SyntaxParser::parsePrimary() {
     Token current = peekCurrentToken();
 
+    if (current.type == TokenType::ADDRESS_OF) {
+        advanceToNextToken(); // Consome '&'
+        std::unique_ptr<Expression> innerExpr = parsePrimary(); // Lê a variável
+        return std::make_unique<AddressOfExpression>(std::move(innerExpr));
+    }
+
     if (current.type == TokenType::LITERAL_INT || 
         current.type == TokenType::LITERAL_FLOAT || 
         current.type == TokenType::LITERAL_STRING ||
+        current.type == TokenType::LITERAL_CHAR ||
         current.type == TokenType::LITERAL_TRUE ||
         current.type == TokenType::LITERAL_FALSE) {
         advanceToNextToken();
@@ -253,6 +269,12 @@ std::unique_ptr<Expression> SyntaxParser::parseExpression() {
 // Declaração de variáveis
 std::unique_ptr<Statement> SyntaxParser::parseVariableDeclaration() {
     Token typeToken = advanceToNextToken(); 
+
+    std::string structName = "";
+    if(typeToken.type == TokenType::CALL_STRUCT){
+        structName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da struct").value;
+    }
+
     Token nameToken = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da variavel");
 
     std::unique_ptr<Expression> initialValueExpression = nullptr;
@@ -267,7 +289,8 @@ std::unique_ptr<Statement> SyntaxParser::parseVariableDeclaration() {
     return std::make_unique<VariableDeclarationStatement>(
         typeToken.type, 
         nameToken.value, 
-        std::move(initialValueExpression)
+        std::move(initialValueExpression),
+        structName
     );
 }
 
@@ -364,7 +387,8 @@ std::unique_ptr<Statement> SyntaxParser::parseForStatement() {
     
     if (currentType == TokenType::INT || currentType == TokenType::FLOAT || 
         currentType == TokenType::CHAR_TYPE || currentType == TokenType::BOOL_TYPE || 
-        currentType == TokenType::FIXED_POINT || currentType == TokenType::STRING_TYPE) {
+        currentType == TokenType::FIXED_POINT || currentType == TokenType::STRING_TYPE ||
+        currentType == TokenType::CALL_STRUCT) {
         initialization = parseVariableDeclaration(); // lê o ';' no final
     } 
     else if (currentType == TokenType::IDENTIFIER) {
@@ -522,24 +546,27 @@ std::unique_ptr<Statement> SyntaxParser::parseSwitchStatement() {
 // Vetores e Matrizes
 std::unique_ptr<Statement> SyntaxParser::parseArrayDeclaration() {
     Token structTypeToken = advanceToNextToken();
-    
-    // O próximo token obrigatoriamente é o tipo de dado
     Token primTypeToken = advanceToNextToken(); 
     
+    std::string structName = "";
+    if (primTypeToken.type == TokenType::CALL_STRUCT) {
+        structName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da struct no vetor").value;
+    }
+
     Token nameToken = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome do vetor/matriz");
 
     std::vector<std::unique_ptr<Expression>> dimensions;
 
     do {
         consumeToken(TokenType::LBRACKET, "Erro de Sintaxe: Esperado '[' na declaracao do vetor");
-        dimensions.push_back(parseExpression()); // O tamanho pode ser um número ou uma conta
+        dimensions.push_back(parseExpression());
         consumeToken(TokenType::RBRACKET, "Erro de Sintaxe: Esperado ']' apos tamanho do vetor");
     } while (peekCurrentToken().type == TokenType::LBRACKET);
 
     consumeToken(TokenType::SEMICOLON, "Erro de Sintaxe: Esperado ';' no final da declaracao do vetor");
 
     return std::make_unique<ArrayDeclarationStatement>(
-        structTypeToken.type, primTypeToken.type, nameToken.value, std::move(dimensions)
+        structTypeToken.type, primTypeToken.type, nameToken.value, std::move(dimensions), structName
     );
 }
 
@@ -580,8 +607,13 @@ std::unique_ptr<Statement> SyntaxParser::parseFunctionDeclaration() {
     advanceToNextToken(); // Consome 'FUNCTION'
 
     Token returnTypeToken = advanceToNextToken();
-    Token nameToken = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da funcao");
+    
+    std::string returnStructName = "";
+    if (returnTypeToken.type == TokenType::CALL_STRUCT) {
+        returnStructName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da struct no retorno").value;
+    }
 
+    Token nameToken = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da funcao");
     consumeToken(TokenType::LPAREN, "Erro de Sintaxe: Esperado '(' apos o nome da funcao");
 
     std::vector<Parameter> parameters;
@@ -589,10 +621,16 @@ std::unique_ptr<Statement> SyntaxParser::parseFunctionDeclaration() {
     if (peekCurrentToken().type != TokenType::RPAREN) {
         do {
             Token paramType = advanceToNextToken();
-            Token paramName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome do parametro");
-            parameters.push_back({paramType.type, paramName.value});
+            
+            std::string paramStructName = "";
+            if (paramType.type == TokenType::CALL_STRUCT) {
+                paramStructName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome da struct no parametro").value;
+            }
 
-            // Se o próximo for uma vírgula, consome a vírgula e o laço repete
+            Token paramName = consumeToken(TokenType::IDENTIFIER, "Erro de Sintaxe: Esperado nome do parametro");
+            
+            parameters.push_back({paramType.type, paramName.value, paramStructName});
+
             if (peekCurrentToken().type == TokenType::COMMA) {
                 advanceToNextToken();
             } else {
@@ -602,11 +640,15 @@ std::unique_ptr<Statement> SyntaxParser::parseFunctionDeclaration() {
     }
 
     consumeToken(TokenType::RPAREN, "Erro de Sintaxe: Esperado ')' apos os parametros");
-    
-    // Lê o bloco de código interno da função
     std::vector<std::unique_ptr<Statement>> body = parseBlock();
 
-    return std::make_unique<FunctionDeclarationStatement>(returnTypeToken.type, nameToken.value, std::move(parameters), std::move(body));
+    return std::make_unique<FunctionDeclarationStatement>(
+        returnTypeToken.type, 
+        nameToken.value, 
+        std::move(parameters), 
+        std::move(body),
+        returnStructName
+    );
 }
 
 // Return
@@ -623,6 +665,53 @@ std::unique_ptr<Statement> SyntaxParser::parseReturnStatement() {
     consumeToken(TokenType::SEMICOLON, "Erro de Sintaxe: Esperado ';' apos o comando RETURN");
 
     return std::make_unique<ReturnStatement>(std::move(returnValue));
+}
+
+std::unique_ptr<Statement> SyntaxParser::parsePrintfStatement() {
+    advanceToNextToken(); // Consome 'PRINTF'
+    consumeToken(TokenType::LPAREN, "Erro de Sintaxe: Esperado '(' apos PRINTF");
+
+    std::vector<std::unique_ptr<Expression>> arguments;
+
+    if (peekCurrentToken().type != TokenType::RPAREN) {
+        do {
+            arguments.push_back(parseExpression());
+            if (peekCurrentToken().type == TokenType::COMMA) {
+                advanceToNextToken(); // Consome vírgula e continua loop
+            } else {
+                break;
+            }
+        } while (true);
+    }
+
+    consumeToken(TokenType::RPAREN, "Erro de Sintaxe: Esperado ')' apos os argumentos do PRINTF");
+    consumeToken(TokenType::SEMICOLON, "Erro de Sintaxe: Esperado ';' no final do PRINTF");
+
+    auto callExpr = std::make_unique<FunctionCallExpression>("printf", std::move(arguments));
+    return std::make_unique<FunctionCallStatement>(std::move(callExpr));
+}
+
+std::unique_ptr<Statement> SyntaxParser::parseScanfStatement() {
+    advanceToNextToken(); // Consome 'SCANF'
+    consumeToken(TokenType::LPAREN, "Erro: Esperado '(' apos SCANF");
+
+    std::vector<std::unique_ptr<Expression>> arguments;
+    if (peekCurrentToken().type != TokenType::RPAREN) {
+        do {
+            arguments.push_back(parseExpression());
+            if (peekCurrentToken().type == TokenType::COMMA) {
+                advanceToNextToken();
+            } else {
+                break;
+            }
+        } while (true);
+    }
+
+    consumeToken(TokenType::RPAREN, "Erro: Esperado ')'");
+    consumeToken(TokenType::SEMICOLON, "Erro: Esperado ';'");
+
+    auto callExpr = std::make_unique<FunctionCallExpression>("scanf", std::move(arguments));
+    return std::make_unique<FunctionCallStatement>(std::move(callExpr));
 }
 
 // Loop principal

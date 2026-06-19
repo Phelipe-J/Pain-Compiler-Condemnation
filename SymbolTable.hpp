@@ -18,6 +18,7 @@ struct SymbolInfo {
     SymbolKind kind = SymbolKind::SCALAR;
     int dimensions = 0;
     Type keyType = Type::UNKNOWN;
+    std::string customTypeName = "";
 };
 
 class SymbolTable {

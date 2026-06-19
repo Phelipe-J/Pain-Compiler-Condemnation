@@ -7,12 +7,13 @@
 #include "Token.hpp"
 
 enum class Type {
-    INT, FIXED_POINT, FLOAT, CHAR, STRING, BOOL, UNKNOWN, ERROR
+    INT, FIXED_POINT, FLOAT, CHAR, STRING, BOOL, STRUCT, UNKNOWN, ERROR
 };
 
 // Declarações Prévias
 class LiteralExpression;
 class IdentifierExpression;
+class AddressOfExpression;
 class BinaryExpression;
 class ArrayAccessExpression;
 class MemberAccessExpression;
@@ -44,6 +45,7 @@ public:
 
     virtual void visit(LiteralExpression& node) = 0;
     virtual void visit(IdentifierExpression& node) = 0;
+    virtual void visit(AddressOfExpression& node) = 0;
     virtual void visit(BinaryExpression& node) = 0;
     virtual void visit(ArrayAccessExpression& node) = 0;
     virtual void visit(MemberAccessExpression& node) = 0;
@@ -81,6 +83,16 @@ public:
 };
 
 class Statement : public SyntaxTreeNode {};
+
+class AddressOfExpression : public Expression {
+public:
+    std::unique_ptr<Expression> innerExpression;
+
+    AddressOfExpression(std::unique_ptr<Expression> inner)
+        : innerExpression(std::move(inner)) {}
+
+    void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
+};
 
 // --- EXPRESSÕES ---
 
@@ -155,9 +167,10 @@ public:
     TokenType variableType;
     std::string variableName;
     std::unique_ptr<Expression> initialValueExpression;
+    std::string customTypeName;
 
-    VariableDeclarationStatement(TokenType type, std::string name, std::unique_ptr<Expression> initialValue)
-        : variableType(type), variableName(std::move(name)), initialValueExpression(std::move(initialValue)) {}
+    VariableDeclarationStatement(TokenType type, std::string name, std::unique_ptr<Expression> initialValue, std::string customType = "")
+        : variableType(type), variableName(std::move(name)), initialValueExpression(std::move(initialValue)), customTypeName(std::move(customType)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
@@ -275,11 +288,12 @@ public:
     TokenType elementType;
     std::string arrayName;
     std::vector<std::unique_ptr<Expression>> dimensions;
+    std::string customTypeName;
 
     ArrayDeclarationStatement(TokenType container, TokenType element, std::string name,
-                              std::vector<std::unique_ptr<Expression>> dims)
+                              std::vector<std::unique_ptr<Expression>> dims, std::string customType = "")
         : containerType(container), elementType(element),
-          arrayName(std::move(name)), dimensions(std::move(dims)) {}
+          arrayName(std::move(name)), dimensions(std::move(dims)), customTypeName(std::move(customType)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };
@@ -335,6 +349,7 @@ public:
 struct Parameter {
     TokenType type;
     std::string name;
+    std::string customTypeName = "";
 };
 
 class FunctionDeclarationStatement : public Statement {
@@ -343,12 +358,14 @@ public:
     std::string functionName;
     std::vector<Parameter> parameters;
     std::vector<std::unique_ptr<Statement>> body;
+    std::string customReturnTypeName;
 
     FunctionDeclarationStatement(TokenType ret, std::string name,
                                  std::vector<Parameter> params,
-                                 std::vector<std::unique_ptr<Statement>> b)
+                                 std::vector<std::unique_ptr<Statement>> b,
+                                 std::string customReturnType = "")
         : returnType(ret), functionName(std::move(name)),
-          parameters(std::move(params)), body(std::move(b)) {}
+          parameters(std::move(params)), body(std::move(b)), customReturnTypeName(std::move(customReturnType)) {}
 
     void accept(ASTVisitor& visitor) override { visitor.visit(*this); }
 };

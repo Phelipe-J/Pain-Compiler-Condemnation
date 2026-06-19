@@ -26,6 +26,7 @@ public:
 
     void visit(LiteralExpression& node) override;
     void visit(IdentifierExpression& node) override;
+    void visit(AddressOfExpression& node) override;
     void visit(BinaryExpression& node) override;
     void visit(ArrayAccessExpression& node) override;
     void visit(MemberAccessExpression& node) override;

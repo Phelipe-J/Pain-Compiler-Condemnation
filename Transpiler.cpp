@@ -184,8 +184,7 @@ std::string Transpiler::generate(std::vector<std::unique_ptr<Statement>>& progra
             statement->accept(*this);
         }
     }
-    indent();
-    out << "return 0;\n";
+
     indentLevel--;
     out << "}\n";
 
@@ -196,6 +195,13 @@ void Transpiler::visit(LiteralExpression& node) {
     if (node.literalType == TokenType::LITERAL_STRING) {
         exprResult = "pcc_strdup(\"" + node.literalValue + "\")";
     } 
+    else if (node.literalType == TokenType::LITERAL_CHAR) {
+        if (!node.literalValue.empty() && node.literalValue.front() == '\'') {
+            exprResult = node.literalValue;
+        } else {
+            exprResult = "'" + node.literalValue + "'";
+        }
+    }
     else if (node.literalType == TokenType::LITERAL_TRUE) {
         exprResult = "1";
     } 
@@ -209,6 +215,10 @@ void Transpiler::visit(LiteralExpression& node) {
 
 void Transpiler::visit(IdentifierExpression& node) {
     exprResult = node.variableName;
+}
+
+void Transpiler::visit(AddressOfExpression& node) {
+    exprResult = "&(" + emitExpression(node.innerExpression.get()) + ")";
 }
 
 void Transpiler::visit(BinaryExpression& node) {
@@ -248,7 +258,12 @@ void Transpiler::visit(FunctionCallExpression& node) {
 
 void Transpiler::visit(VariableDeclarationStatement& node) {
     indent();
-    out << typeToCType(node.variableType) << " " << node.variableName;
+    if (node.variableType == TokenType::CALL_STRUCT) {
+        out << "struct " << node.customTypeName << " " << node.variableName;
+    } else {
+        out << typeToCType(node.variableType) << " " << node.variableName;
+    }
+
     if (node.initialValueExpression) {
         out << " = " << emitExpression(node.initialValueExpression.get());
     }
@@ -340,13 +355,26 @@ void Transpiler::visit(SwitchStatement& node) {
 
 void Transpiler::visit(FunctionDeclarationStatement& node) {
     indent();
-    out << typeToCType(node.returnType) << " " << node.functionName << "(";
+    
+    if (node.returnType == TokenType::CALL_STRUCT) {
+        out << "struct " << node.customReturnTypeName << " ";
+    } else {
+        out << typeToCType(node.returnType) << " ";
+    }
+    
+    out << node.functionName << "(";
+    
     for (size_t i = 0; i < node.parameters.size(); i++) {
         if (i > 0) {
             out << ", ";
         }
-        out << typeToCType(node.parameters[i].type) << " " << node.parameters[i].name;
+        if (node.parameters[i].type == TokenType::CALL_STRUCT) {
+            out << "struct " << node.parameters[i].customTypeName << " " << node.parameters[i].name;
+        } else {
+            out << typeToCType(node.parameters[i].type) << " " << node.parameters[i].name;
+        }
     }
+    
     out << ") ";
     emitBlock(node.body);
     out << "\n\n";
@@ -368,7 +396,11 @@ void Transpiler::visit(ReturnStatement& node) {
 
 void Transpiler::visit(ArrayDeclarationStatement& node) {
     indent();
-    out << typeToCType(node.elementType) << " " << node.arrayName;
+    if (node.elementType == TokenType::CALL_STRUCT) {
+        out << "struct " << node.customTypeName << " " << node.arrayName;
+    } else {
+        out << typeToCType(node.elementType) << " " << node.arrayName;
+    }
     for (auto& dimension : node.dimensions) {
         out << "[" << emitExpression(dimension.get()) << "]";
     }
@@ -405,12 +437,18 @@ void Transpiler::visit(StructDeclarationStatement& node) {
     indent();
     out << "struct " << node.structName << " {\n";
     indentLevel++;
+    
     for (auto& member : node.body) {
         if (auto* field = dynamic_cast<VariableDeclarationStatement*>(member.get())) {
             indent();
-            out << typeToCType(field->variableType) << " " << field->variableName << ";\n";
+            if (field->variableType == TokenType::CALL_STRUCT) {
+                out << "struct " << field->customTypeName << " " << field->variableName << ";\n";
+            } else {
+                out << typeToCType(field->variableType) << " " << field->variableName << ";\n";
+            }
         }
     }
+    
     indentLevel--;
     indent();
     out << "};\n\n";

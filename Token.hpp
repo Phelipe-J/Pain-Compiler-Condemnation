@@ -2,6 +2,8 @@
 #include <string>
 
 enum class TokenType {
+    ADDRESS_OF,
+
     // Tipos Primitivos
     INT, FIXED_POINT, FLOAT, CHAR_TYPE, STRING_TYPE, BOOL_TYPE,
 
@@ -15,10 +17,10 @@ enum class TokenType {
     ARRAY, MULTI_ARRAY, DICTIONARY,
 
     // Funções
-    FUNCTION, RETURN,
+    FUNCTION, RETURN, PRINTF, SCANF,
 
     // Definidos pelo usuário
-    STRUCT,
+    STRUCT, CALL_STRUCT,
 
     // Lógico Matemáticos
     ASSIGN,         // =
@@ -56,6 +58,7 @@ enum class TokenType {
     LITERAL_STRING,
     LITERAL_INT,
     LITERAL_FLOAT,
+    LITERAL_CHAR,
 
     // true/false
     LITERAL_TRUE,

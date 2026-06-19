@@ -54,6 +54,9 @@ public:
     std::unique_ptr<Statement> parseFunctionDeclaration();
     std::unique_ptr<Statement> parseReturnStatement();
 
+    std::unique_ptr<Statement> parsePrintfStatement();
+    std::unique_ptr<Statement> parseScanfStatement();
+
     // Loop Principal
     std::vector<std::unique_ptr<Statement>> parseProgram();
 };

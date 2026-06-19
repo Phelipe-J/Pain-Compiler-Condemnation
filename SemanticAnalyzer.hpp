@@ -29,17 +29,21 @@ private:
     Type currentReturnType = Type::UNKNOWN;
     Type currentSwitchType = Type::UNKNOWN;
 
+    void registerBuiltins();
     void reportError(const std::string& message);
     void registerFunction(FunctionDeclarationStatement& node);
     Type evaluateExpression(Expression* expression);
     void analyzeStatements(std::vector<std::unique_ptr<Statement>>& statements);
     void requireBooleanCondition(Expression* condition, const std::string& context);
 
+    std::unordered_map<std::string, std::unordered_map<std::string, Type>> structRegistry;
+
 public:
     bool analyze(std::vector<std::unique_ptr<Statement>>& program);
 
     void visit(LiteralExpression& node) override;
     void visit(IdentifierExpression& node) override;
+    void visit(AddressOfExpression& node) override;
     void visit(BinaryExpression& node) override;
     void visit(ArrayAccessExpression& node) override;
     void visit(MemberAccessExpression& node) override;

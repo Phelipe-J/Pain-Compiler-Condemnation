@@ -12,6 +12,7 @@ Type tokenTypeToType(TokenType type) {
         case TokenType::CHAR_TYPE:   return Type::CHAR;
         case TokenType::STRING_TYPE: return Type::STRING;
         case TokenType::BOOL_TYPE:   return Type::BOOL;
+        case TokenType::CALL_STRUCT: return Type::STRUCT;
         default:                     return Type::UNKNOWN;
     }
 }
@@ -24,6 +25,7 @@ std::string typeToString(Type type) {
         case Type::CHAR:        return "char";
         case Type::STRING:      return "string";
         case Type::BOOL:        return "bool";
+        case Type::STRUCT:      return "struct";
         case Type::ERROR:       return "<erro>";
         default:                return "<desconhecido>";
     }
@@ -49,6 +51,20 @@ bool isAssignable(Type target, Type source) {
 }
 
 } // namespace
+
+void SemanticAnalyzer::registerBuiltins() {
+    symbols.declare("printf", Type::INT);
+
+    FunctionSignature printfSignature;
+    printfSignature.returnType = Type::INT; 
+    functions["printf"] = printfSignature;
+
+    symbols.declare("scanf", Type::INT);
+
+    FunctionSignature scanfSignature;
+    scanfSignature.returnType = Type::INT; 
+    functions["scanf"] = scanfSignature;
+}
 
 void SemanticAnalyzer::reportError(const std::string& message) {
     errors.push_back(message);
@@ -94,6 +110,8 @@ void SemanticAnalyzer::registerFunction(FunctionDeclarationStatement& node) {
 bool SemanticAnalyzer::analyze(std::vector<std::unique_ptr<Statement>>& program) {
     symbols.enterScope();
 
+    registerBuiltins();
+
     for (auto& statement : program) {
         if (auto* fn = dynamic_cast<FunctionDeclarationStatement*>(statement.get())) {
             registerFunction(*fn);
@@ -133,9 +151,16 @@ void SemanticAnalyzer::visit(LiteralExpression& node) {
         node.literalType == TokenType::LITERAL_FALSE) {
         node.resolvedType = Type::BOOL;
     }
+    else if (node.literalType == TokenType::LITERAL_CHAR){
+        node.resolvedType = Type::CHAR;
+    }
     else {
         node.resolvedType = Type::UNKNOWN;
     }
+}
+
+void SemanticAnalyzer::visit(AddressOfExpression& node) {
+    node.resolvedType = evaluateExpression(node.innerExpression.get());
 }
 
 void SemanticAnalyzer::visit(IdentifierExpression& node) {
@@ -216,16 +241,25 @@ void SemanticAnalyzer::visit(BinaryExpression& node) {
 void SemanticAnalyzer::visit(VariableDeclarationStatement& node) {
     Type declaredType = tokenTypeToType(node.variableType);
 
-    if (node.initialValueExpression) {
-        Type initType = evaluateExpression(node.initialValueExpression.get());
-        if (!isAssignable(declaredType, initType)) {
-            reportError("Nao e possivel inicializar a variavel '" + node.variableName +
-                        "' (tipo '" + typeToString(declaredType) + "') com um valor do tipo '" +
-                        typeToString(initType) + "'.");
+    if (node.variableType == TokenType::CALL_STRUCT) {
+        if (structRegistry.find(node.customTypeName) == structRegistry.end()) {
+            reportError("Tipo de struct '" + node.customTypeName + "' desconhecido.");
         }
     }
 
-    if (!symbols.declare(node.variableName, declaredType)) {
+    if (node.initialValueExpression) {
+        Type initType = evaluateExpression(node.initialValueExpression.get());
+        if (!isAssignable(declaredType, initType)) {
+            reportError("Nao e possivel inicializar a variavel com tipo incompativel.");
+        }
+    }
+
+    SymbolInfo info;
+    info.name = node.variableName;
+    info.type = declaredType;
+    info.customTypeName = node.customTypeName; 
+
+    if (!symbols.declare(info)) {
         reportError("Variavel '" + node.variableName + "' ja foi declarada neste escopo.");
     }
 }
@@ -344,7 +378,35 @@ void SemanticAnalyzer::visit(ArrayAccessExpression& node) {
 }
 
 void SemanticAnalyzer::visit(MemberAccessExpression& node) {
-    node.resolvedType = Type::UNKNOWN;
+    SymbolInfo* symbol = symbols.lookup(node.objectName);
+
+    if (symbol == nullptr) {
+        reportError("Objeto '" + node.objectName + "' usado sem ter sido declarado.");
+        node.resolvedType = Type::ERROR;
+        return;
+    }
+
+    if (symbol->type != Type::STRUCT) {
+        reportError("Variavel '" + node.objectName + "' nao e uma struct.");
+        node.resolvedType = Type::ERROR;
+        return;
+    }
+
+    auto structIt = structRegistry.find(symbol->customTypeName);
+    if (structIt == structRegistry.end()) {
+        reportError("Planta da Struct '" + symbol->customTypeName + "' nao encontrada.");
+        node.resolvedType = Type::ERROR;
+        return;
+    }
+
+    auto memberIt = structIt->second.find(node.memberName);
+    if (memberIt == structIt->second.end()) {
+        reportError("Membro '" + node.memberName + "' nao existe na struct '" + symbol->customTypeName + "'.");
+        node.resolvedType = Type::ERROR;
+        return;
+    }
+
+    node.resolvedType = memberIt->second;
 }
 
 void SemanticAnalyzer::visit(FunctionCallExpression& node) {
@@ -361,19 +423,31 @@ void SemanticAnalyzer::visit(FunctionCallExpression& node) {
     }
 
     const FunctionSignature& signature = found->second;
-    if (argTypes.size() != signature.parameterTypes.size()) {
-        reportError("A funcao '" + node.functionName + "' espera " +
-                    std::to_string((int)signature.parameterTypes.size()) +
-                    " argumento(s), mas recebeu " + std::to_string((int)argTypes.size()) + ".");
-    } else {
-        for (size_t i = 0; i < argTypes.size(); i++) {
-            if (!isAssignable(signature.parameterTypes[i], argTypes[i])) {
-                reportError("O argumento " + std::to_string((int)(i + 1)) + " da funcao '" +
-                            node.functionName + "' deve ser '" + typeToString(signature.parameterTypes[i]) +
-                            "', mas e '" + typeToString(argTypes[i]) + "'.");
+
+    if (node.functionName == "printf" || node.functionName == "scanf") {
+        if (argTypes.empty()) {
+            reportError("A funcao 'printf' exige pelo menos um argumento (string de formatacao).");
+        } else if (argTypes[0] != Type::STRING) {
+            reportError("O primeiro argumento da funcao 'printf' deve ser uma '" + typeToString(Type::STRING) + 
+                        "', mas e '" + typeToString(argTypes[0]) + "'.");
+        }
+    } 
+    else {
+        if (argTypes.size() != signature.parameterTypes.size()) {
+            reportError("A funcao '" + node.functionName + "' espera " +
+                        std::to_string((int)signature.parameterTypes.size()) +
+                        " argumento(s), mas recebeu " + std::to_string((int)argTypes.size()) + ".");
+        } else {
+            for (size_t i = 0; i < argTypes.size(); i++) {
+                if (!isAssignable(signature.parameterTypes[i], argTypes[i])) {
+                    reportError("O argumento " + std::to_string((int)(i + 1)) + " da funcao '" +
+                                node.functionName + "' deve ser '" + typeToString(signature.parameterTypes[i]) +
+                                "', mas e '" + typeToString(argTypes[i]) + "'.");
+                }
             }
         }
     }
+
     node.resolvedType = signature.returnType;
 }
 
@@ -432,11 +506,22 @@ void SemanticAnalyzer::visit(ArrayDeclarationStatement& node) {
         }
     }
 
+    Type elementType = tokenTypeToType(node.elementType);
+
+    if (node.elementType == TokenType::CALL_STRUCT) {
+        if (structRegistry.find(node.customTypeName) == structRegistry.end()) {
+            reportError("Tipo de struct '" + node.customTypeName + "' desconhecido para o vetor.");
+        }
+    }
+
     SymbolInfo info;
     info.name = node.arrayName;
-    info.type = tokenTypeToType(node.elementType);
+    info.type = elementType;
     info.kind = SymbolKind::ARRAY;
     info.dimensions = (int)node.dimensions.size();
+    
+    info.customTypeName = node.customTypeName; 
+
     if (!symbols.declare(info)) {
         reportError("Variavel '" + node.arrayName + "' ja foi declarada neste escopo.");
     }
@@ -486,10 +571,35 @@ void SemanticAnalyzer::visit(ArrayAssignmentStatement& node) {
 
 void SemanticAnalyzer::visit(MemberAssignmentStatement& node) {
     SymbolInfo* symbol = symbols.lookup(node.objectName);
-    evaluateExpression(node.assignedValue.get());
+    Type valueType = evaluateExpression(node.assignedValue.get());
 
     if (symbol == nullptr) {
         reportError("Atribuicao para objeto '" + node.objectName + "' que nao foi declarado.");
+        return;
+    }
+
+    if (symbol->type != Type::STRUCT) {
+        reportError("Variavel '" + node.objectName + "' nao e uma struct para receber atribuicao de membro.");
+        return;
+    }
+
+    auto structIt = structRegistry.find(symbol->customTypeName);
+    if (structIt == structRegistry.end()) {
+        reportError("Planta da Struct '" + symbol->customTypeName + "' nao encontrada na memoria.");
+        return;
+    }
+
+    auto memberIt = structIt->second.find(node.memberName);
+    if (memberIt == structIt->second.end()) {
+        reportError("Membro '" + node.memberName + "' nao existe na struct '" + symbol->customTypeName + "'.");
+        return;
+    }
+
+    Type expectedType = memberIt->second;
+
+    if (!isAssignable(expectedType, valueType)) {
+        reportError("Nao e possivel atribuir um valor do tipo '" + typeToString(valueType) +
+                    "' ao membro '" + node.memberName + "' (tipo '" + typeToString(expectedType) + "').");
     }
 }
 
@@ -509,6 +619,15 @@ void SemanticAnalyzer::visit(StructDeclarationStatement& node) {
         reportError("Struct '" + node.structName + "' declarada mais de uma vez.");
     }
 
+    std::unordered_map<std::string, Type> members;
+    for (auto& stmt : node.body) {
+        if (auto* varDecl = dynamic_cast<VariableDeclarationStatement*>(stmt.get())) {
+            Type memberType = tokenTypeToType(varDecl->variableType);
+            members[varDecl->variableName] = memberType;
+        }
+    }
+    structRegistry[node.structName] = members;
+
     symbols.enterScope();
     analyzeStatements(node.body);
     symbols.exitScope();
@@ -526,9 +645,13 @@ void SemanticAnalyzer::visit(FunctionDeclarationStatement& node) {
 
     symbols.enterScope();
     for (const Parameter& param : node.parameters) {
-        if (!symbols.declare(param.name, tokenTypeToType(param.type))) {
-            reportError("Parametro '" + param.name + "' duplicado na funcao '" +
-                        node.functionName + "'.");
+        SymbolInfo info;
+        info.name = param.name;
+        info.type = tokenTypeToType(param.type);
+        info.customTypeName = param.customTypeName; 
+
+        if (!symbols.declare(info)) {
+            reportError("Parametro '" + param.name + "' duplicado na funcao '" + node.functionName + "'.");
         }
     }
     analyzeStatements(node.body);
@@ -550,7 +673,13 @@ void SemanticAnalyzer::visit(ReturnStatement& node) {
     }
 
     if (!insideFunction) {
-        reportError("Comando 'return' usado fora de uma funcao.");
+        if (!hasValue) {
+            reportError("O 'return' no escopo global (main) deve retornar um valor 'int'.");
+        } 
+        else if (valueType != Type::INT) {
+            reportError("O 'return' no escopo global (main) deve retornar um 'int', mas esta retornando '" +
+                        typeToString(valueType) + "'.");
+        }
         return;
     }
 
@@ -558,5 +687,7 @@ void SemanticAnalyzer::visit(ReturnStatement& node) {
         reportError("Tipo de retorno incompativel: a funcao espera '" +
                     typeToString(currentReturnType) + "', mas o 'return' e do tipo '" +
                     typeToString(valueType) + "'.");
+    } else if (!hasValue && currentReturnType != Type::UNKNOWN /* Void? */) {
+        // Void?
     }
 }
