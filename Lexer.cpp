@@ -80,7 +80,7 @@ void Lexer::initializeDictionary() {
     dictionary["  \t \t  \t"] = TokenType::RPAREN;
     dictionary[" \t\t\t\t \t\t"] = TokenType::LBRACE;
     dictionary[" \t\t\t\t\t \t"] = TokenType::RBRACE;
-    dictionary[" \t \t\t \t "] = TokenType::LBRACKET;
+    dictionary[" \t \t\t \t\t"] = TokenType::LBRACKET;
     dictionary[" \t \t\t\t \t"] = TokenType::RBRACKET;
     dictionary["  \t   \t "] = TokenType::QUOTE_DOUBLE;
     dictionary["  \t  \t\t\t"] = TokenType::QUOTE_SINGLE;
